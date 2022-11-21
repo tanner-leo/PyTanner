@@ -4,10 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+pathlist = []
+
 # importing txt files and determining the scan rates
 def readtxtCV(path, debug=False, calc_ramp=True):
     text = pd.read_csv(path,delimiter='\t')
-    print(path)
+    pathlist.append(path)
     if calc_ramp==True:
         r1 = text.rename(columns={"time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle"})
         maxt = r1[r1.E == max(r1.E)].t.values[0]
@@ -31,7 +33,7 @@ def readtxtCV(path, debug=False, calc_ramp=True):
             plt.show()
         return r1, slope
     else:
-        return r1
+        return r1, pathlist
     
 def readtxtCA(path):
     print(path)
@@ -46,16 +48,16 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     
     if filt != "":
         if nfilt != "":
-            results = [readtxtCV(path, debug) for path in paths if (filt in path)&(nfilt not in path)]
+            results, pathlist = [readtxtCV(path, debug) for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [readtxtCV(path, debug) for path in paths if filt in path]
+            results, pathlist = [readtxtCV(path, debug) for path in paths if filt in path]
     elif nfilt != "":
-        results = [readtxtCV(path, debug) for path in paths if nfilt not in path]
+        results, pathlist = [readtxtCV(path, debug) for path in paths if nfilt not in path]
     else:
-        results = [readtxtCV(path, debug) for path in paths]
+        results, pathlist = [readtxtCV(path, debug) for path in paths]
     r, ramp = [],[]
     r, ramp = zip(*results)
-    return r, ramp
+    return r, ramp, pathlist
 
 # Parent function for readtxtCA function
 def importtxtCA(paths, filt="", nfilt=""):
