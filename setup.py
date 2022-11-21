@@ -5,11 +5,12 @@ with open("README.md","r",encoding="utf-8") as fh:
 
 PyTanner.setup(
     name='PyTanner',
-    version='0.0.1',
+    version='0.0.2',
     author='Tanner Leo',
     description='Various Electrochemistry Related Functions',
     long_description = long_description,
     long_description_content_type="text/markdown",
     packages=['PyTanner'],
-    install_requires=['pandas','matplotlib','numpy']
+    install_requires=['pandas','matplotlib','numpy'],
+    url='https://github.com/tanmann13/EchemTools.git'
 )
