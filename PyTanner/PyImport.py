@@ -36,16 +36,16 @@ def readtxtCV(path, debug=False, calc_ramp=True):
         return r1, pathlist
     
 def readtxtCA(path):
-    print(path)
+    pathlist.append(path)
     text = pd.read_csv(path,delimiter='\t', encoding='unicode escape')
     r1 = text.rename(columns={"time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle"})
-    return r1
+    return r1, path
 
 # Parent function for readtxtCV function
 def importtxtCV(paths, debug=False, filt="", nfilt=""):
     # kwargs: debug=False, filt=CV, nfilt=OCV
     # returns data, ramp rate
-    
+    pathlist=[]
     if filt != "":
         if nfilt != "":
             results, pathlist = [readtxtCV(path, debug) for path in paths if (filt in path)&(nfilt not in path)]
@@ -61,16 +61,17 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
 
 # Parent function for readtxtCA function
 def importtxtCA(paths, filt="", nfilt=""):
+    pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [readtxtCA(path) for path in paths if (nfilt not in path) & (filt in path)]
+            results, pathlist = [readtxtCA(path) for path in paths if (nfilt not in path) & (filt in path)]
         else:
-            results = [readtxtCA(path) for path in paths if (filt in path)]
+            results,pathlist = [readtxtCA(path) for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [readtxtCA(path) for path in paths if (nfilt not in path)]
+        results,pathlist = [readtxtCA(path) for path in paths if (nfilt not in path)]
     else:
-        results = [readtxtCA(path) for path in paths]
-    return results
+        results,pathlist = [readtxtCA(path) for path in paths]
+    return results, pathlist
 
 
 # Example of how to use the import txt function
