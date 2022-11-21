@@ -31,7 +31,7 @@ def readtxtCV(path, debug=False, calc_ramp=True):
             plt.plot(ranget, rangeE)
             plt.plot(r1.t[:100], r1.E[:100])
             plt.show()
-        return r1, slope
+        return r1, slope, pathlist
     else:
         return r1, pathlist
     
