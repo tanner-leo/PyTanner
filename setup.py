@@ -1,9 +1,9 @@
-import PyTanner
+import setuptools
 
 with open("README.md","r",encoding="utf-8") as fh:
     long_description=fh.read()
 
-PyTanner.setup(
+setuptools.setup(
     name='PyTanner',
     version='0.0.2',
     author='Tanner Leo',
