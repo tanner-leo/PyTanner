@@ -39,7 +39,7 @@ def readtxtCA(path):
     pathlist.append(path)
     text = pd.read_csv(path,delimiter='\t', encoding='unicode escape')
     r1 = text.rename(columns={"time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle"})
-    return r1, path
+    return r1, pathlist
 
 # Parent function for readtxtCV function
 def importtxtCV(paths, debug=False, filt="", nfilt=""):
@@ -66,11 +66,11 @@ def importtxtCA(paths, filt="", nfilt=""):
         if nfilt != "":
             results, pathlist = [readtxtCA(path) for path in paths if (nfilt not in path) & (filt in path)]
         else:
-            results,pathlist = [readtxtCA(path) for path in paths if (filt in path)]
+            results, pathlist = [readtxtCA(path) for path in paths if (filt in path)]
     elif nfilt != "":
-        results,pathlist = [readtxtCA(path) for path in paths if (nfilt not in path)]
+        results, pathlist = [readtxtCA(path) for path in paths if (nfilt not in path)]
     else:
-        results,pathlist = [readtxtCA(path) for path in paths]
+        results, pathlist = [readtxtCA(path) for path in paths]
     return results, pathlist
 
 
