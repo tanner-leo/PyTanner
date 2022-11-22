@@ -31,15 +31,14 @@ def readtxtCV(path, debug=False, calc_ramp=True):
             plt.plot(ranget, rangeE)
             plt.plot(r1.t[:100], r1.E[:100])
             plt.show()
-        return r1, slope, pathlist
+        return r1, slope
     else:
-        return r1, pathlist
+        return r1
     
 def readtxtCA(path):
-    pathlist.append(path)
     text = pd.read_csv(path,delimiter='\t', encoding='unicode escape')
     r1 = text.rename(columns={"time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle"})
-    return r1, pathlist
+    return r1
 
 # Parent function for readtxtCV function
 def importtxtCV(paths, debug=False, filt="", nfilt=""):
@@ -48,13 +47,13 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results, pathlist = [readtxtCV(path, debug) for path in paths if (filt in path)&(nfilt not in path)]
+            results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results, pathlist = [readtxtCV(path, debug) for path in paths if filt in path]
+            results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths if filt in path]
     elif nfilt != "":
-        results, pathlist = [readtxtCV(path, debug) for path in paths if nfilt not in path]
+        results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths if nfilt not in path]
     else:
-        results, pathlist = [readtxtCV(path, debug) for path in paths]
+        results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths]
     r, ramp = [],[]
     r, ramp = zip(*results)
     return r, ramp, pathlist
@@ -64,13 +63,13 @@ def importtxtCA(paths, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results, pathlist = [readtxtCA(path) for path in paths if (nfilt not in path) & (filt in path)]
+            results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths if (nfilt not in path) & (filt in path)]
         else:
-            results, pathlist = [readtxtCA(path) for path in paths if (filt in path)]
+            results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths if (filt in path)]
     elif nfilt != "":
-        results, pathlist = [readtxtCA(path) for path in paths if (nfilt not in path)]
+        results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths if (nfilt not in path)]
     else:
-        results, pathlist = [readtxtCA(path) for path in paths]
+        results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths]
     return results, pathlist
 
 
@@ -90,3 +89,5 @@ def folder2files(folder):
         #print(scan)
         names.append("%s%s" % (folder, scan.name))
     return names
+
+
