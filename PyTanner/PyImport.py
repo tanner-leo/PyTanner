@@ -17,15 +17,15 @@ def readtxtCV(path, debug=False, calc_ramp=True):
         mint = r1[r1.t == min(r1.t)].t.values[0]
         minE = r1[r1.t == mint].E.values[0]
     
-        ranget = r1[(r1.t > mint) & (r1.t < maxt)].t[:1000]
-        rangeE = r1[(r1.t > mint) & (r1.t < maxt)].E[:1000]
+        ranget = r1[(r1.t > mint) & (r1.t < maxt)].t.loc[:1000]
+        rangeE = r1[(r1.t > mint) & (r1.t < maxt)].E.loc[:1000]
         ranget = r1.t[:100]
         rangeE = r1.E[:100]
         
         slope = np.average(np.diff(rangeE)/np.diff(ranget)) * 1000
-        print("%.1f mV/s" % slope)
-    
+            
         if debug == True:
+            print("%.1f mV/s" % slope)
             plt.figure()
             plt.title(path)
             plt.plot(ranget, rangeE)
@@ -47,13 +47,17 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths if (filt in path)&(nfilt not in path)]
+            results = [(readtxtCV(path, debug)) for path in paths if (filt in path)&(nfilt not in path)]
+            pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths if filt in path]
+            results = [(readtxtCV(path, debug)) for path in paths if filt in path]
+            pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths if nfilt not in path]
+        results = [(readtxtCV(path, debug)) for path in paths if nfilt not in path]
+        pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = [(readtxtCV(path, debug))&(pathlist.append(path)) for path in paths]
+        results = [(readtxtCV(path, debug)) for path in paths]
+        pathlist = [path for path in paths]
     r, ramp = [],[]
     r, ramp = zip(*results)
     return r, ramp, pathlist
@@ -63,13 +67,17 @@ def importtxtCA(paths, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths if (nfilt not in path) & (filt in path)]
+            results = [(readtxtCA(path)) for path in paths if (nfilt not in path) & (filt in path)]
+            pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths if (filt in path)]
+            results = [(readtxtCA(path)) for path in paths if (filt in path)]
+            pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths if (nfilt not in path)]
+        results = [(readtxtCA(path)) for path in paths if (nfilt not in path)]
+        pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = [(readtxtCA(path))&(pathlist.append(path)) for path in paths]
+        results = [(readtxtCA(path)) for path in paths]
+        pathlist = [path for path in paths]
     return results, pathlist
 
 

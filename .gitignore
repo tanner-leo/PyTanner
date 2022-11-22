@@ -1,2 +1,5 @@
 venv/
 .vscode
+testing_data/
+test.py
+PyTanner/__pycache__/
