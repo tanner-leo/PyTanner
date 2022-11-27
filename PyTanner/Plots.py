@@ -67,3 +67,14 @@ class Impedance:
         ax.set_aspect('equal', adjustable='datalim')
         #ax.set_ylim(ylim)
         fig.savefig(fname, format='png', dpi=300)
+
+
+
+def plt_nyquist(df, save=False, fname="./Figure_nyquist.png"):
+    plt.plot(df.real, df.imag, 'ro', markersize=3)
+    plt.axis('square')
+    plt.xlim(-1,max(df.real)+5)
+    plt.ylim(-1,max(df.real)+5)
+    if save == True:
+        plt.savefig(fname, format='png', dpi=300)
+    plt.show()

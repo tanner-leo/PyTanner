@@ -99,3 +99,18 @@ def folder2files(folder):
     return names
 
 
+def readtxtPEIS(path):
+    text = pd.read_csv(path,delimiter='\t',encoding='unicode escape')
+    r1 = text.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t"})
+    return r1
+
+def importtxtPEIS(paths, filter=""):
+    results = [readtxtPEIS(path) for path in paths if filter in path]
+    names = [path.split('/')[3] for path in paths if filter in path]
+    return results, names
+def filterlist(dfs, fnames, filter=""):
+    files = [dfs, fnames]
+    print()
+    newdata = [data for data, filenames in zip(dfs, fnames) if filter in filenames]
+    newnames = [filenames for data, filenames in zip(dfs, fnames) if filter in filenames]
+    return newdata, newnames
