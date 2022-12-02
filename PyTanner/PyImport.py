@@ -49,16 +49,16 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in paths if (filt in path)&(nfilt not in path))]
+            results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths) if (filt in path)&(nfilt not in path))]
             pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in paths if filt in path)]
+            results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths) if filt in path)]
             pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in paths if nfilt not in path)]
+        results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths) if nfilt not in path)]
         pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in paths)]
+        results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths))]
         pathlist = [path for path in paths]
     r, ramp = [],[]
     r, ramp = zip(*results)
