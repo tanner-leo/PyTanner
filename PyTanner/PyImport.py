@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from tqdm import tqdm
+from joblib import Parallel, delayed
 
 pathlist = []
 
@@ -47,16 +49,16 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [(readtxtCV(path, debug)) for path in paths if (filt in path)&(nfilt not in path)]
+            results = [Parallel(-1)(delayed(readtxtCV)(path, debug) for path in paths if (filt in path)&(nfilt not in path))]
             pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [(readtxtCV(path, debug)) for path in paths if filt in path]
+            results = [Parallel(-1)(delayed(readtxtCV)(path, debug) for path in paths if filt in path)]
             pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [(readtxtCV(path, debug)) for path in paths if nfilt not in path]
+        results = [Parallel(-1)(delayed(readtxtCV)(path, debug) for path in paths if nfilt not in path)]
         pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = [(readtxtCV(path, debug)) for path in paths]
+        results = [Parallel(-1)(delayed(readtxtCV)(path, debug) for path in paths)]
         pathlist = [path for path in paths]
     r, ramp = [],[]
     r, ramp = zip(*results)
