@@ -108,7 +108,7 @@ def readtxtPEIS(path):
     return r1
 
 def importtxtPEIS(paths, filter=""):
-    results = Parallel(n_jobs=-1, prefer="threads")(delayed(readtxtPEIS)(path) for path in tqdm(paths) if filter in path)
+    results = Parallel(n_jobs=1)(delayed(readtxtPEIS)(path) for path in tqdm(paths) if filter in path)
     names = [path.split('/')[3] for path in paths if filter in path]
     return results, names
 def filterlist(dfs, fnames, filter=""):

@@ -3,3 +3,4 @@ venv/
 testing_data/
 test.py
 PyTanner/__pycache__/
+Test*
