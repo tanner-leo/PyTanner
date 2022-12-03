@@ -25,7 +25,7 @@ def readtxtCV(path, debug=False, calc_ramp=True):
         rangeE = r1.E[:100]
         
         slope = np.average(np.diff(rangeE)/np.diff(ranget)) * 1000
-            
+        #print(slope)
         if debug == True:
             print("%.1f mV/s" % slope)
             plt.figure()
@@ -49,18 +49,19 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths) if (filt in path)&(nfilt not in path))]
+            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1) if (filt in path)&(nfilt not in path))
             pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths) if filt in path)]
+            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1) if filt in path)
             pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths) if nfilt not in path)]
+        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1) if nfilt not in path)
         pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = [Parallel(n_jobs=-1)(delayed(readtxtCV)(path, debug) for path in tqdm(paths))]
+        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1))
         pathlist = [path for path in paths]
     r, ramp = [],[]
+    #print(results)
     r, ramp = zip(*results)
     return r, ramp, pathlist
 
@@ -69,16 +70,16 @@ def importtxtCA(paths, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = [(readtxtCA(path)) for path in paths if (nfilt not in path) & (filt in path)]
+            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1) if (nfilt not in path) & (filt in path))
             pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = [(readtxtCA(path)) for path in paths if (filt in path)]
+            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1) if (filt in path))
             pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = [(readtxtCA(path)) for path in paths if (nfilt not in path)]
+        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1) if (nfilt not in path))
         pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = [(readtxtCA(path)) for path in paths]
+        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1))
         pathlist = [path for path in paths]
     return results, pathlist
 
