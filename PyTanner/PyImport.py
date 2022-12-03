@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 from joblib import Parallel, delayed
 
 pathlist = []
@@ -49,16 +49,16 @@ def importtxtCV(paths, debug=False, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1) if (filt in path)&(nfilt not in path))
+            results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1, maxinterval=1) if (filt in path)&(nfilt not in path))
             pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1) if filt in path)
+            results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1, maxinterval=1) if filt in path)
             pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1) if nfilt not in path)
+        results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1, maxinterval=1) if nfilt not in path)
         pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1))
+        results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCV)(path, debug) for path in tqdm(paths, miniters=1, maxinterval=1))
         pathlist = [path for path in paths]
     r, ramp = [],[]
     #print(results)
@@ -70,16 +70,16 @@ def importtxtCA(paths, filt="", nfilt=""):
     pathlist=[]
     if filt != "":
         if nfilt != "":
-            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1) if (nfilt not in path) & (filt in path))
+            results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1, maxinterval=1) if (nfilt not in path) & (filt in path))
             pathlist = [path for path in paths if (filt in path)&(nfilt not in path)]
         else:
-            results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1) if (filt in path))
+            results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1, maxinterval=1) if (filt in path))
             pathlist = [path for path in paths if (filt in path)]
     elif nfilt != "":
-        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1) if (nfilt not in path))
+        results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1, maxinterval=1) if (nfilt not in path))
         pathlist = [path for path in paths if (nfilt not in path)]
     else:
-        results = Parallel(n_jobs=-1, max_nbytes=1e6)(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1))
+        results = Parallel(n_jobs=-1, max_nbytes=1e6, prefer="threads")(delayed(readtxtCA)(path) for path in tqdm(paths, miniters=1, maxinterval=1))
         pathlist = [path for path in paths]
     return results, pathlist
 
@@ -108,7 +108,7 @@ def readtxtPEIS(path):
     return r1
 
 def importtxtPEIS(paths, filter=""):
-    results = [readtxtPEIS(path) for path in paths if filter in path]
+    results = Parallel(n_jobs=-1, prefer="threads")(delayed(readtxtPEIS)(path) for path in tqdm(paths) if filter in path)
     names = [path.split('/')[3] for path in paths if filter in path]
     return results, names
 def filterlist(dfs, fnames, filter=""):
