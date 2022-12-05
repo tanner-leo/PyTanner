@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #import os
 import cmath
+from dataclasses import dataclass, field
+import pandas as pd
 
 
 def plotCVseries(datalist, parameter, x_axis ="E (V vs Ag/AgCl)", y_axis="i (mA)"):
@@ -70,11 +72,90 @@ class Impedance:
 
 
 
-def plt_nyquist(df, save=False, fname="./Figure_nyquist.png"):
+def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
     plt.plot(df.real, df.imag, 'ro', markersize=3)
     plt.axis('square')
     plt.xlim(-1,max(df.real)+5)
     plt.ylim(-1,max(df.real)+5)
+    plt.xlabel("$Z_{real}$ (ohms)")
+    plt.ylabel("$Z_{imag}$ (ohms)")
+    if title != "":
+        plt.title(title)
     if save == True:
         plt.savefig(fname, format='png', dpi=300)
+    
     plt.show()
+
+
+@dataclass
+class PEIS:
+    data: pd.DataFrame = field(repr=False)
+    name: str = field(repr=True, default="PEIS Dataframe")
+    #real: pd.Series 
+    #imag: pd.Series
+    
+    def __post_init__(self):
+        self.real = self.data.real
+        self.imag = self.data.imag
+        self.complex = self.data.comp
+        self.freq = self.data.freq
+
+    
+
+@dataclass
+class PEISs:
+    data: pd.DataFrame = field(repr=False)
+    slicer: str
+    units: str = ""
+    xax: str = ""
+    yax: str = ""
+    description: str = field(default_factory=str)
+    def __post_init__(self):
+        self.sl_val = self.data[self.slicer]
+        self.datas = self.data.values
+        self.labels = self.data[self.slicer]+ " " + self.units
+        self.databackup = self.data
+        if max(self.data.cycle) > 1:
+            print("Multiple Cycles Detected")
+        
+    def nyquist(self):
+        for index, row in self.data.iterrows():
+            label = row[self.slicer] + " " + self.units
+            data = row.data
+            #print(data)
+            plt.plot(data.real, data.imag, label="%s" % (label))
+        plt.xlabel(self.xax)
+        plt.ylabel(self.yax)
+        plt.legend()
+        plt.show()
+            
+    def add_units(self, unit):
+        self.units = unit
+        self.labels = self.data[self.slicer] + " " + self.units
+    
+    def add_axes(self, xaxis, yaxis):
+        self.xax = xaxis
+        self.yax = yaxis
+
+    def remove(self, items=list[int]):
+        #print(type(items))
+        if type(items)==type(1):
+            try:
+                self.data.drop(index=items, inplace=True)
+                self.data = self.data.reset_index(drop=True)
+            except:
+                print("already removed")
+        else:
+            for item in items:
+                try:
+                    self.data.drop(index=item, inplace=True)
+                    self.data = self.data.reset_index(drop=True)
+                except:
+                    print("already removed")
+        
+    
+    def reset(self):
+        self.data = self.databackup
+
+
+

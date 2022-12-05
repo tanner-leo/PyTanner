@@ -104,13 +104,20 @@ def folder2files(folder):
 
 def readtxtPEIS(path):
     text = pd.read_csv(path,delimiter='\t',encoding='unicode escape')
-    r1 = text.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t"})
+    r1 = text.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
+    'cyle number':'cycle'})
     return r1
 
 def importtxtPEIS(paths, filter=""):
-    results = Parallel(n_jobs=1)(delayed(readtxtPEIS)(path) for path in tqdm(paths) if filter in path)
+    results = Parallel(n_jobs=1, max_nbytes=1e6, prefer="threads")(delayed(readtxtPEIS)(path) for path in tqdm(paths) if filter in path)
     names = [path.split('/')[3] for path in paths if filter in path]
-    return results, names
+    df = pd.DataFrame({'data':results, 'names':names})
+    for index, row in df.iterrows():
+        eval = row.data.empty
+        if eval == True:
+            df.drop(index, inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    return df
 def filterlist(dfs, fnames, filter=""):
     files = [dfs, fnames]
     print()
