@@ -91,6 +91,7 @@ def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
 class PEIS:
     data: pd.DataFrame = field(repr=False)
     name: str = field(repr=True, default="PEIS Dataframe")
+    description: str = field(repr=False, default="description here")
     #real: pd.Series 
     #imag: pd.Series
     
@@ -102,7 +103,10 @@ class PEIS:
 
     def nyquist(self, save=False, fname="Fig.png", title=""):
         plt_nyquist(self, save=save, fname=fname, title=title)
-        
+
+    def write_description(self, descrp):
+        self.description = descrp
+
 
     
 
