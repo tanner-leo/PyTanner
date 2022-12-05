@@ -123,8 +123,9 @@ class PEISs:
         self.datas = self.data.values
         self.labels = self.data[self.slicer]+ " " + self.units
         self.databackup = self.data
-        if max(self.data.cycle) > 1:
-            print("Multiple Cycles Detected")
+        if 'cycle' in self.data:
+            if max(self.data.cycle) > 1:
+                print("Multiple Cycles Detected")
         
     def nyquist(self):
         for index, row in self.data.iterrows():
@@ -172,7 +173,8 @@ class CP:
     name: str = field(repr=True, default="CP")
     description: str = field(repr=False, default="description")
     timeunits: str = 's'
-    Iunits: str = "mA"
+    Eunits: str = "V"
+    reference: str = field(repr=True, default="Ag/AgCl")
 
     def __post_init__(self):
         self.data = self.data.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
@@ -182,6 +184,59 @@ class CP:
 
     def column(self):
         list(self.data.columns)
+
+    def change_units(self, timeunits='s', Eunits='V'):
+        if (self.timeunits == timeunits) & (self.Eunits == Eunits):
+            return
+        if timeunits == 'm':
+            if self.timeunits == 's':
+                self.data.t = self.data.t / 60
+                self.timeunits = 'm'
+        else:
+            if self.timeunits == 'm':
+                self.data.t = self.data.t * 60
+                self.timeunits = 's'     
+        if Eunits == 'mV':
+            self.data.E = self.data.E *1000
+            self.data.Econtrl = self.data.Econtrl * 1000
+
+
+    def plot(self, timeunit='s', save=False, figpass = "", cycles=False):
+        if figpass == "":
+            fig = plt.figure()
+        else:
+            fig = plt.figure(figpass)
+        if cycles == False:
+            plt.plot(self.data.t, self.data.E)
+            plt.xlabel("Time (%s)" % self.timeunits)
+            plt.ylabel("E (%s vs %s)" % (self.Eunits, self.reference))
+            plt.show()
+        else:
+            for cycle in self.cycles:
+                d = self.data[self.data.cycle == cycle]
+                plt.plot(d.t, d.E, marker='.', linestyle="None")
+                
+            plt.xlabel("Time (%s)" % self.timeunits)
+            plt.ylabel("I (%s)" % self.Eunits)
+            plt.show()
+
+        return fig
+
+@dataclass
+class CA:
+    data: pd.DataFrame
+    name: str = field(repr=True, default="CA")
+    description: str = field(repr=False, default="description")
+    timeunits: str = 's'
+    Iunits: str = "mA"
+    reference: str = field(repr=True, default="Ag/AgCl")
+
+    def __post_init__(self):
+        self.data = self.data.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
+    'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "Ewe","control/mA":"Icontrl", "control/V":"Econtrl"})
+        self.columns = self.data.columns
+        self.cycles = self.data.cycle.unique()
+        
 
     def change_units(self, timeunits='s', Iunits='mA'):
         if (self.timeunits == timeunits) & (self.Iunits == Iunits):
@@ -198,26 +253,23 @@ class CP:
             self.data.I = self.data.I / 1000
             self.data.Icontrl = self.data.Icontrl / 1000
 
-
     def plot(self, timeunit='s', save=False, figpass = "", cycles=False):
         if figpass == "":
             fig = plt.figure()
         else:
             fig = plt.figure(figpass)
         if cycles == False:
-            plt.plot(self.data.t, self.data.E)
+            plt.plot(self.data.t, self.data.I)
             plt.xlabel("Time (%s)" % self.timeunits)
-            plt.ylabel("I (%s)" % self.Iunits)
+            plt.ylabel("I (%s)" % (self.Iunits))
             plt.show()
         else:
             for cycle in self.cycles:
                 d = self.data[self.data.cycle == cycle]
-                plt.plot(d.t, d.E, marker='.', linestyle="None")
+                plt.plot(d.t, d.I, marker='.', linestyle="None")
                 
             plt.xlabel("Time (%s)" % self.timeunits)
-            plt.ylabel("I (%s)" % self.Iunits)
+            plt.ylabel("I (%s)" % (self.Iunits))
             plt.show()
 
         return fig
-
-
