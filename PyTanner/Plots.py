@@ -100,6 +100,10 @@ class PEIS:
         self.complex = self.data.comp
         self.freq = self.data.freq
 
+    def nyquist(self, save=False, fname="Fig.png", title=""):
+        plt_nyquist(self, save=save, fname=fname, title=title)
+        
+
     
 
 @dataclass
