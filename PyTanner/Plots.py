@@ -171,3 +171,53 @@ class CP:
     data: pd.DataFrame
     name: str = field(repr=True, default="CP")
     description: str = field(repr=False, default="description")
+    timeunits: str = 's'
+    Iunits: str = "mA"
+
+    def __post_init__(self):
+        self.data = self.data.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
+    'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "E","control/mA":"Icontrl"})
+        self.columns = self.data.columns
+        self.cycles = self.data.cycle.unique()
+
+    def column(self):
+        list(self.data.columns)
+
+    def change_units(self, timeunits='s', Iunits='mA'):
+        if (self.timeunits == timeunits) & (self.Iunits == Iunits):
+            return
+        if timeunits == 'm':
+            if self.timeunits == 's':
+                self.data.t = self.data.t / 60
+                self.timeunits = 'm'
+        else:
+            if self.timeunits == 'm':
+                self.data.t = self.data.t * 60
+                self.timeunits = 's'     
+        if Iunits == 'A':
+            self.data.I = self.data.I / 1000
+            self.data.Icontrl = self.data.Icontrl / 1000
+
+
+    def plot(self, timeunit='s', save=False, figpass = "", cycles=False):
+        if figpass == "":
+            fig = plt.figure()
+        else:
+            fig = plt.figure(figpass)
+        if cycles == False:
+            plt.plot(self.data.t, self.data.E)
+            plt.xlabel("Time (%s)" % self.timeunits)
+            plt.ylabel("I (%s)" % self.Iunits)
+            plt.show()
+        else:
+            for cycle in self.cycles:
+                d = self.data[self.data.cycle == cycle]
+                plt.plot(d.t, d.E, marker='.', linestyle="None")
+                
+            plt.xlabel("Time (%s)" % self.timeunits)
+            plt.ylabel("I (%s)" % self.Iunits)
+            plt.show()
+
+        return fig
+
+
