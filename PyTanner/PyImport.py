@@ -105,7 +105,7 @@ def folder2files(folder):
 def readtxtPEIS(path):
     text = pd.read_csv(path,delimiter='\t',encoding='unicode escape')
     r1 = text.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
-    'cyle number':'cycle'})
+    'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "E","control/mA":"icontrl"})
     return r1
 
 def importtxtPEIS(paths, filter=""):

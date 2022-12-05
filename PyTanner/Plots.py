@@ -166,4 +166,8 @@ class PEISs:
         self.data = self.databackup
 
 
-
+@dataclass
+class CP:
+    data: pd.DataFrame
+    name: str = field(repr=True, default="CP")
+    description: str = field(repr=False, default="description")
