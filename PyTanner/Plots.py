@@ -70,6 +70,47 @@ class Impedance:
         #ax.set_ylim(ylim)
         fig.savefig(fname, format='png', dpi=300)
 
+def plt_bode(self, fname='./Figure_bode.png', save=False, title=''):
+    fig, ax = plt.subplots(1,1)
+    ax.plot(self.freq, abs(self.comp), 'black')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    ax2 = ax.twinx()
+    ax2.plot(self.freq, self.phase, 'red')
+    ax2.set_ylabel("Phase Angle (deg)")
+    ax.set_ylabel("|$Z$| (Ohms)")
+    ax.set_xlabel("Frequency (Hz)")
+    ax2.spines['right'].set_color('red')
+    ax2.spines['left'].set_color('black')
+    if save == True:
+        plt.savefig(fname, format='png', dpi=300)
+    if title != "":
+        plt.title(title)
+    
+def plt_dual_plots(self, ylim=[0,1000], fw=10, fname='./Figure.png', save=False):
+        Y = self.comp
+        freq = self.freq
+        fig, ax = plt.subplots(1,2)
+        fig.set_figwidth(fw)
+        ax[0].plot(Y.real, abs(Y.imag), '-bo', markersize=2.5)
+        ax[0].set_ylabel("|$Z_{imag}$| (Ohms)")
+        ax[0].set_xlabel("|$Z_{real}$| (Ohms)")
+        ax[0].set_aspect('equal', adjustable='datalim')
+        ax[1].plot(freq, abs(Y))
+        ax[1].set_yscale('log')
+        ax[1].set_xscale('log')
+        ax[0].set_ylim(ylim)
+        ax2 = ax[1].twinx()
+        phase = np.angle(Y, deg=True)
+        ax2.plot(freq, phase, 'r')
+        ax2.set_ylabel("Phase Angle (deg)")
+        ax[1].set_ylabel("|$Z$| (Ohms)")
+        ax[1].set_xlabel("Frequency (Hz)")
+        plt.tight_layout()
+        size = fig.gca()
+        if save == True:
+            fig.savefig(fname, format='png', dpi=300)
+    
 
 
 def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
@@ -104,6 +145,13 @@ class PEIS:
     def nyquist(self, save=False, fname="Fig.png", title=""):
         plt_nyquist(self, save=save, fname=fname, title=title)
 
+    def bode(self, save=False, fname='./Fig.png', title=''):
+        plt_bode(self.data, save=save, fname=fname, title=title)
+    
+    def dual_plots(self, ylim=[0,1000], fw=10, fname='./Figure.png', save=False):
+        plt_dual_plots(self.data, ylim=ylim, fw=fw, fname=fname, save=save)
+
+
     def write_description(self, descrp):
         self.description = descrp
 
@@ -127,7 +175,7 @@ class PEISs:
             if max(self.data.cycle) > 1:
                 print("Multiple Cycles Detected")
         
-    def nyquist(self):
+    def nyquist(self, save=False, fname='./Fig.png'):
         for index, row in self.data.iterrows():
             label = row[self.slicer] + " " + self.units
             data = row.data
@@ -136,7 +184,12 @@ class PEISs:
         plt.xlabel(self.xax)
         plt.ylabel(self.yax)
         plt.legend()
+        if save == True:
+            plt.savefig(fname, format='png', dpi=300)
         plt.show()
+
+    
+
             
     def add_units(self, unit):
         self.units = unit
@@ -201,7 +254,7 @@ class CP:
             self.data.Econtrl = self.data.Econtrl * 1000
 
 
-    def plot(self, timeunit='s', save=False, figpass = "", cycles=False):
+    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='./Fig.png'):
         if figpass == "":
             fig = plt.figure()
         else:
@@ -210,7 +263,7 @@ class CP:
             plt.plot(self.data.t, self.data.E)
             plt.xlabel("Time (%s)" % self.timeunits)
             plt.ylabel("E (%s vs %s)" % (self.Eunits, self.reference))
-            plt.show()
+            
         else:
             for cycle in self.cycles:
                 d = self.data[self.data.cycle == cycle]
@@ -218,7 +271,9 @@ class CP:
                 
             plt.xlabel("Time (%s)" % self.timeunits)
             plt.ylabel("I (%s)" % self.Eunits)
-            plt.show()
+        if save == True:
+            plt.savefig(fname, format='png', dpi=300)
+        plt.show()
 
         return fig
 
@@ -253,7 +308,7 @@ class CA:
             self.data.I = self.data.I / 1000
             self.data.Icontrl = self.data.Icontrl / 1000
 
-    def plot(self, timeunit='s', save=False, figpass = "", cycles=False):
+    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='fig.png'):
         if figpass == "":
             fig = plt.figure()
         else:
@@ -262,7 +317,7 @@ class CA:
             plt.plot(self.data.t, self.data.I)
             plt.xlabel("Time (%s)" % self.timeunits)
             plt.ylabel("I (%s)" % (self.Iunits))
-            plt.show()
+            
         else:
             for cycle in self.cycles:
                 d = self.data[self.data.cycle == cycle]
@@ -270,6 +325,8 @@ class CA:
                 
             plt.xlabel("Time (%s)" % self.timeunits)
             plt.ylabel("I (%s)" % (self.Iunits))
-            plt.show()
+        if save == True:
+            plt.savefig(fname, format='png', dpi=300)
+        plt.show()
 
         return fig
