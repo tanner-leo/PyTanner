@@ -255,13 +255,16 @@ class CP:
             self.data.Econtrl = self.data.Econtrl * 1000
 
 
-    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='./Fig.png'):
+    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='./Fig.png', line=True):
         if figpass == "":
             fig = plt.figure()
         else:
             fig = plt.figure(figpass)
         if cycles == False:
-            plt.plot(self.data.t, self.data.E)
+            if line==False:
+                plt.plot(self.data.t, self.data.E, linestyle="None")
+            else:
+                plt.plot(self.data.t, self.data.E)
             plt.xlabel("Time (%s)" % self.timeunits)
             plt.ylabel("E (%s vs %s)" % (self.Eunits, self.reference))
             
