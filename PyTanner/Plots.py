@@ -124,7 +124,7 @@ def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
         plt.title(title)
     if save == True:
         plt.savefig(fname, format='png', dpi=300)
-    
+    plt.tight_layout()
     plt.show()
 
 
