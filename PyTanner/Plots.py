@@ -255,14 +255,14 @@ class CP:
             self.data.Econtrl = self.data.Econtrl * 1000
 
 
-    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='./Fig.png', line=True):
+    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='./Fig.png', line=True, markersize=4):
         if figpass == "":
             fig = plt.figure()
         else:
             fig = plt.figure(figpass)
         if cycles == False:
             if line==False:
-                plt.plot(self.data.t, self.data.E, linestyle="None")
+                plt.plot(self.data.t, self.data.E, linestyle="None", marker='o', markersize=markersize)
             else:
                 plt.plot(self.data.t, self.data.E)
             plt.xlabel("Time (%s)" % self.timeunits)
