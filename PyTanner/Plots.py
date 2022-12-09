@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import cmath
 from dataclasses import dataclass, field
 import pandas as pd
+from scipy import optimize
 
 
 def plotCVseries(datalist, parameter, x_axis ="E (V vs Ag/AgCl)", y_axis="i (mA)"):
@@ -113,16 +114,69 @@ def plt_dual_plots(self, ylim=[0,1000], fw=10, fname='./Figure.png', save=False)
     
 
 
-def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
-    plt.plot(df.real, df.imag, 'ro', markersize=3)
-    plt.axis('square')
-    plt.xlim(-1,max(df.real)+5)
-    plt.ylim(-1,max(df.real)+5)
-    plt.xlabel("$Z_{real}$ (ohms)")
-    plt.ylabel("$Z_{imag}$ (ohms)")
-    plt.tight_layout()
-    if title != "":
-        plt.title(title)
+
+
+
+def plt_bode(df, fname='./Figure_bode.png', legends=[""], save=False, title='', markersize=6, bbox=[0.95,0.8]):
+    
+    if legends == [""]:
+        fig, ax = plt.subplots(1,1)
+        ax.plot(df.freq, abs(df.comp), 'black', marker='x', label='|Z|', markersize=markersize)
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax2 = ax.twinx()
+        ax2.plot(df.freq, df.phase, 'red', marker='o', label='$f$', markersize=markersize)
+        ax2.set_ylabel("Phase Angle (deg)")
+        ax.set_ylabel("|$Z$| (Ohms)")
+        ax.set_xlabel("Frequency (Hz)")
+        ax2.spines['right'].set_color('red')
+        ax2.spines['left'].set_color('black')
+        fig.legend(bbox_to_anchor=(1.05, 1))
+        
+        fig.tight_layout()
+        if save == True:
+            fig.savefig(fname, format='png', dpi=300, bbox_inches='tight')
+        return fig
+    else:
+        linestyles = ['x', '.', 'o', '-*']
+        fig, ax = plt.subplots(1,1)
+        for self, label, linestyle in zip(df, legends, linestyles):
+            ax.plot(self.freq, abs(self.comp), 'black', marker=linestyle, label="|Z| %s" % label, linewidth=1, markersize=markersize)
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax2 = ax.twinx()
+        for self, label, linestyle in zip(df, legends, linestyles):
+            ax2.plot(self.freq, self.phase, 'red', marker=linestyle, linewidth=1, markersize=markersize, label="$f$ %s" % label)
+        #ax2.set_ylim(-90, 90)
+        ax2.set_ylabel("Phase Angle (deg)")
+        ax.set_ylabel("|$Z$| (Ohms)")
+        ax.set_xlabel("Frequency (Hz)")
+        ax2.spines['right'].set_color('red')
+        ax2.spines['left'].set_color('black')
+        fig.legend(bbox_to_anchor=(bbox[0], bbox[1]),loc='lower left')
+
+        fig.tight_layout()
+        if save == True:
+            fig.savefig(fname, format='png', dpi=300, bbox_inches='tight')
+        return fig
+
+def plt_nyquist(df, legends=[""], save=False, fname="./Figure_nyquist.png", title=""):
+    if legends != [""]:
+        for df, label in zip(df, legends):
+            plt.plot(df.real, df.imag, 'o', markersize=3, label=label)
+            plt.axis('square')
+            plt.xlim(-1,max(df.real)*1.1)
+            plt.ylim(-1,max(df.real)*1.1)
+        plt.legend()
+    else:
+        for df in df:
+            plt.plot(df.real, df.imag, 'o', markersize=3)
+            plt.axis('square')
+            plt.xlim(-1,max(df.real)+5)
+            plt.ylim(-1,max(df.real)+5)
+    plt.ylabel('-Z$_{imag}$ (ohms)')
+    plt.xlabel('Z$_{real}$ (ohms)')
+    plt.title(title)
     plt.tight_layout()
     if save == True:
         plt.savefig(fname, format='png', dpi=300, bbox_inches='tight')
@@ -144,7 +198,20 @@ class PEIS:
         self.freq = self.data.freq
 
     def nyquist(self, save=False, fname="Fig.png", title=""):
-        plt_nyquist(self, save=save, fname=fname, title=title)
+        # def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
+        plt.plot(self.real, self.imag, 'ro', markersize=3)
+        plt.axis('square')
+        plt.xlim(-1,max(self.real)+5)
+        plt.ylim(-1,max(self.real)+5)
+        plt.xlabel("$Z_{real}$ (ohms)")
+        plt.ylabel("$Z_{imag}$ (ohms)")
+        plt.tight_layout()
+        if title != "":
+            plt.title(title)
+        plt.tight_layout()
+        if save == True:
+            plt.savefig(fname, format='png', dpi=300, bbox_inches='tight')
+        plt.show()
 
     def bode(self, save=False, fname='./Fig.png', title=''):
         plt_bode(self.data, save=save, fname=fname, title=title)
@@ -155,6 +222,11 @@ class PEIS:
 
     def write_description(self, descrp):
         self.description = descrp
+
+    def fitting(self):
+        fitter = PEISfit(self.data)
+        fitter.fit()
+        fitter.plot()
 
 
     
@@ -242,12 +314,12 @@ class CP:
     def change_units(self, timeunits='s', Eunits='V'):
         if (self.timeunits == timeunits) & (self.Eunits == Eunits):
             return
-        if timeunits == 'm':
+        if timeunits == 'min':
             if self.timeunits == 's':
                 self.data.t = self.data.t / 60
-                self.timeunits = 'm'
+                self.timeunits = 'min'
         else:
-            if self.timeunits == 'm':
+            if self.timeunits == 'min':
                 self.data.t = self.data.t * 60
                 self.timeunits = 's'     
         if Eunits == 'mV':
@@ -279,7 +351,7 @@ class CP:
             plt.savefig(fname, format='png', dpi=300)
         plt.show()
 
-        return fig
+        #return fig
 
 @dataclass
 class CA:
@@ -300,12 +372,12 @@ class CA:
     def change_units(self, timeunits='s', Iunits='mA'):
         if (self.timeunits == timeunits) & (self.Iunits == Iunits):
             return
-        if timeunits == 'm':
+        if timeunits == 'min':
             if self.timeunits == 's':
                 self.data.t = self.data.t / 60
-                self.timeunits = 'm'
+                self.timeunits = 'min'
         else:
-            if self.timeunits == 'm':
+            if self.timeunits == 'min':
                 self.data.t = self.data.t * 60
                 self.timeunits = 's'     
         if Iunits == 'A':
@@ -333,4 +405,155 @@ class CA:
             plt.savefig(fname, format='png', dpi=300)
         plt.show()
 
-        return fig
+        #return fig
+
+@dataclass
+class ECdata:
+    df: pd.DataFrame = field(repr=False)
+    comment: str = field(repr=True, default="Blank Description")
+    types: list[str] = field(repr=True, default="None")
+
+    def __post_init__(self):
+        self.df['type'], self.df['obj'] = np.nan, np.nan
+        for index, row in self.df.iterrows():
+            name = row.names
+            name2 = row.data.columns
+            if "PEIS_C" in name:
+                row.type = "PEIS"
+                row.obj = PEIS(row.data, name=row.names)
+            elif "CP_C" in name:
+                row.type = "CP"
+                row.obj = CP(row.data, name=row.names)
+            elif "CA_C" in name:
+                row.type = "CA"
+                row.obj = CA(row.data, name=row.names)
+            elif "CV_C" in name:
+                row.type = "CV"
+            elif "OCV_C" in row.names:
+                row.type = "OCV"
+            else:
+                if "freq" in name2:
+                    row.type = "PEIS"
+                    row.obj = PEIS(row.data, name=row.names)
+                elif "Icontrl" in name2:
+                    row.type = "CP"
+                    row.obj = CP(row.data, name=row.names)
+                elif "Econtrl" in name2:
+                    row.type = "CA"
+                    row.obj = CA(row.data, name=row.names)
+                elif "CV_C" in name2:
+                    row.type = "CV"
+                elif "OCV_C" in row.names2:
+                    row.type = "OCV"
+            self.df.iloc[index] = row
+        self.types = list(self.df.type)
+
+    def CP(self): return self.df[self.df.type == "CP"]
+    def CA(self): return self.df[self.df.type == "CA"]
+    def CV(self): return self.df[self.df.type == "CV"]
+    def PEIS(self): return self.df[self.df.type == "PEIS"]
+
+
+def Zcap(omega,Cd):
+    #j = np.sqrt(-1)
+    return -1j/(2*np.pi*omega*Cd)
+
+def Zres(R1):
+    return R1
+
+def Z_rc_s(omega, Cd, R1): # series circuit of R and C
+    return Zres(R1) + Zcap(omega, Cd)
+def Z_rc_s_abs(omega, Cd, R1): # series circuit of R and C
+    return abs(Zres(R1) + Zcap(omega, Cd))
+
+def Z_rq_p(omega, R2, Q2, a2):
+    return Zres(R2)/(Zres(R2)*Q2*(1j*2*np.pi*omega)**a2+1)
+
+def Z_rc_p(omega, Cd, R1): # paralell circuit of R and C
+    return (Zres(R1)**-1+Zcap(omega, Cd)**-1)**-1
+
+def Z_randles(omega, Cd, R1, R2): # Randles Circuit
+    return Zres(R2) + Z_rc_p(omega, Cd, R1)
+
+def Z_randles_p(omega, Cd1, R1, R2, Cd2, R3, R4): # R2 and R4 are series with the Cd1/R1, and Cd2/R3
+    return ((Zres(R2) + Z_rc_p(omega, Cd1, R1))**-1 + (Zres(R4) + Z_rc_p(omega, Cd2, R3))**-1)**-1
+
+def Z_randles_s(omega, Cd1, R1, R2, Cd2, R3): # R2 and R4 are series with the Cd1/R1, and Cd2/R3
+    #omega = omega/(2*np.pi)
+    return Zres(R2) + Z_rc_p(omega, Cd1, R1) + Z_rc_p(omega, Cd2, R3)
+
+def Z_randles_s(omega, Cd1, R1, R2, Cd2, R3): # R2 and R4 are series with the Cd1/R1, and Cd2/R3
+    #omega = omega/(2*np.pi)
+    return Zres(R2) + Z_rc_p(omega, Cd1, R1) + Z_rc_p(omega, Cd2, R3)
+
+def Z_randles_s_pseudo(omega, R1, Q2, R2, Q3, R3, a2, a3):
+    return Zres(R1) + Z_rq_p(omega, R2, Q2, a2) + Z_rq_p(omega, R3, Q3, a3)
+
+@dataclass
+class PEISfit:
+    dc: dataclass
+    fitfunction: str = field(repr=False, default='Z_randles_s_pseudo')
+    
+
+    def __post_init__(self):
+        self.data = self.dc.data
+        self.functions = ['Z_rc_p', 'Z_randles_p', 'Z_randles_s', 'Z_randles_s_pseudo']
+        if self.fitfunction == 'Z_randles_s_pseudo':
+            self.p0 =(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
+            columns=("R1", "Q2", "R2", "Q3", "R3", "a2", "a3")
+            temp = [self.p0]
+            self.params = pd.DataFrame(temp, columns=columns)
+            self.params.rename(index={0:'initial guess'}, inplace=True)
+            
+
+    def fit(self, cycle=1):
+        df1 = self.data[self.data.cycle == cycle]
+        if self.fitfunction == 'Z_randles_s':
+            p0=(10e-6, 1000, 16, 10e-6, 10000)
+            def f(omega, Cd1, R1, R2, Cd2, R3): 
+                return np.hstack([np.real(Z_randles_s(omega, Cd1, R1, R2, Cd2, R3)), np.imag(np.real(Z_randles_s(omega, Cd1, R1, R2, Cd2, R3)))]) #fitting function
+            xdata, ydata = df1.freq, np.hstack([df1.real, df1.imag]) # assigning fitting variables
+            popt, pcov = optimize.curve_fit(f, xdata, ydata, p0=p0, bounds=(0,10000),
+                               method='trf') #perform fit
+            eva = Z_randles_s(xdata, *popt) #evaluating function without abs
+            real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
+            self.fitresult = pd.DataFrame({'real':real, 'imag':imag, 'comp':abs(eva), 'freq':xdata, 'phase':np.angle(eva, deg=True)}) #assigning df
+            self.fitdata = df1
+        elif self.fitfunction == 'Z_randles_s_pseudo':
+            p0 = self.p0
+            #p0=(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
+            def f1(omega, R1, Q2, R2, Q3, R3, a2, a3): 
+                solve = Z_randles_s_pseudo(omega, R1, Q2, R2, Q3, R3, a2, a3)
+                #real, imag = [d.real for d in solve], [d.imag * -1 for d in solve]
+                real = np.real(solve)
+                imag = np.imag(solve)*-1
+                return np.hstack([real, imag])
+            xdata, ydata = df1.freq, np.hstack([df1.real, df1.imag]) # assigning fitting variables
+            popt, pcov = optimize.curve_fit(f1, xdata, ydata, p0=p0, bounds=([0, -10, 0, -10, 0, 0, 0],[1000, 1000, 1000, 1000, 1000, 1, 1]),
+                            method='trf') #perform fit
+            xf = f1(xdata, *popt)
+            eva = Z_randles_s_pseudo(xdata, *popt) #evaluating function without abs
+            real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
+            self.fitresult = pd.DataFrame({'real':real, 'imag':imag, 'comp':abs(eva), 'freq':xdata, 'phase':np.angle(eva, deg=True)}) #assigning df
+            self.fitdata = df1
+            param_labels = np.array(["R1", "Q2", "R2", "Q3", "R3", "a2", "a3"])
+            temp = [popt]
+            temp2 = pd.DataFrame(temp, columns=param_labels, index=[cycle])
+            self.params = pd.concat([self.params, temp2])
+
+    def fit_cycles(self, plot=False):
+        cycles = self.data.cycle.unique()
+        for cycle in cycles:
+            self.fit(cycle=cycle)
+            if plot == True:
+                self.plot()
+    
+
+
+    def plot(self, type='nyquist', save=False, fname="Fig.png"):
+        dd = self.fitresult
+        df1 = self.fitdata
+        if type == 'bode':
+            plt_bode([dd,df1], legends=['fit', 'data'], fname=fname, save=False) # plot results
+        if type == 'nyquist':
+            plt_nyquist([dd, df1], legends=['fit', 'data'], fname=fname, save=False)
