@@ -201,8 +201,8 @@ class PEIS:
         # def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
         plt.plot(self.real, self.imag, 'ro', markersize=3)
         plt.axis('square')
-        plt.xlim(-1,max(self.real)+5)
-        plt.ylim(-1,max(self.real)+5)
+        plt.xlim(-1,max(self.real)*1.1)
+        plt.ylim(-1,max(self.real)*1.1)
         plt.xlabel("$Z_{real}$ (ohms)")
         plt.ylabel("$Z_{imag}$ (ohms)")
         plt.tight_layout()
