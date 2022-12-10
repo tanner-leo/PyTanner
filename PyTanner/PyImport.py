@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import os
 from tqdm.autonotebook import tqdm
 from joblib import Parallel, delayed
+from dataclasses import dataclass, field
+from PyTanner import Plots as p
 
 pathlist = []
 
@@ -92,13 +94,25 @@ debug = False
 results = [readtxt(path, debug) for path in path]
 r1, ramp1 = zip(*results)
 '''
-def folder2files(folder):
+def folder2files(folder, filter=[''], remover=['']):
     # Folder should be like "./txt/"
     scan = os.scandir(folder)
     names = []
-    for scan in scan:
-        #print(scan)
-        names.append("%s%s" % (folder, scan.name))
+    if type(filter) == str:
+        filter = [filter]
+    if type(remover) == str:
+        remover = [remover]
+    if filter == '':
+        names = [("%s%s" % (folder, scan.name)) for scan in scan]
+    else:
+        namesfil = [("%s" % (scan.name)) for scan in scan]
+        for filter in filter:
+            namesfil = [name for name in namesfil if filter in name]
+        if remover != ['']:
+            for nfilter in remover:
+                namesfil = [name for name in namesfil if nfilter not in name]
+        names = [("%s%s" % (folder, name)) for name in namesfil]
+        
     return names
 
 
@@ -124,3 +138,53 @@ def filterlist(dfs, fnames, filter=""):
     newdata = [data for data, filenames in zip(dfs, fnames) if filter in filenames]
     newnames = [filenames for data, filenames in zip(dfs, fnames) if filter in filenames]
     return newdata, newnames
+
+@dataclass
+class ECdata:
+    df: pd.DataFrame = field(repr=False)
+    comment: str = field(repr=True, default="Blank Description")
+    types: list[str] = field(repr=True, default="None")
+
+    def __post_init__(self):
+        self.df['type'], self.df['obj'] = np.nan, np.nan
+        for index, row in self.df.iterrows():
+            name = row.names
+            name2 = row.data.columns
+            if "PEIS_C" in name:
+                row.type = "PEIS"
+                row.obj = p.PEIS(row.data, name=row.names)
+            elif "CP_C" in name:
+                row.type = "CP"
+                row.obj = p.CP(row.data, name=row.names)
+            elif "CA_C" in name:
+                row.type = "CA"
+                row.obj = p.CA(row.data, name=row.names)
+            elif "_CV_C" in name:
+                row.type = "CV"
+            elif "OCV_C" in name:
+                row.type = "OCV"
+                row.obj = p.OCV(row.data, name=row.names)
+            else:
+                if "freq" in name2:
+                    row.type = "PEIS"
+                    row.obj = p.PEIS(row.data, name=row.names)
+                elif "Icontrl" in name2:
+                    row.type = "CP"
+                    row.obj = p.CP(row.data, name=row.names)
+                elif "Econtrl" in name2:
+                    row.type = "CA"
+                    row.obj = p.CA(row.data, name=row.names)
+                elif "CV_C" in name2:
+                    row.type = "CV"
+                elif "OCV_C" in row.names2:
+                    row.type = "OCV"
+                    row.obj = p.OCV(row.data, name=row.names)
+            self.df.iloc[index] = row
+        self.types = list(self.df.type)
+        self.df['comment'] = np.nan
+
+    def CP(self): return self.df[self.df.type == "CP"]
+    def CA(self): return self.df[self.df.type == "CA"]
+    def CV(self): return self.df[self.df.type == "CV"]
+    def PEIS(self): return self.df[self.df.type == "PEIS"]
+    def OCV(self): return self.df[self.df.type == "OCV"]

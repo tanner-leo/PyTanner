@@ -327,11 +327,8 @@ class CP:
             self.data.Econtrl = self.data.Econtrl * 1000
 
 
-    def plot(self, timeunit='s', save=False, figpass = "", cycles=False, fname='./Fig.png', line=True, markersize=4):
-        if figpass == "":
-            fig = plt.figure()
-        else:
-            fig = plt.figure(figpass)
+    def plot(self, variable='E', timeunit='s', save=False, figpass =False, cycles=False, fname='./Fig.png', line=True, markersize=4):
+        
         if cycles == False:
             if line==False:
                 plt.plot(self.data.t, self.data.E, linestyle="None", marker='o', markersize=markersize)
@@ -349,9 +346,9 @@ class CP:
             plt.ylabel("I (%s)" % self.Eunits)
         if save == True:
             plt.savefig(fname, format='png', dpi=300)
-        plt.show()
-
-        #return fig
+        if figpass == True:
+            plt.show(block=True)
+            return
 
 @dataclass
 class CA:
@@ -408,50 +405,55 @@ class CA:
         #return fig
 
 @dataclass
-class ECdata:
-    df: pd.DataFrame = field(repr=False)
-    comment: str = field(repr=True, default="Blank Description")
-    types: list[str] = field(repr=True, default="None")
+class OCV:
+    data: pd.DataFrame
+    name: str = field(repr=True, default="CA")
+    description: str = field(repr=False, default="description")
+    timeunits: str = 's'
+    Eunits: str = "V"
+    reference: str = field(repr=True, default="Ag/AgCl")
 
     def __post_init__(self):
-        self.df['type'], self.df['obj'] = np.nan, np.nan
-        for index, row in self.df.iterrows():
-            name = row.names
-            name2 = row.data.columns
-            if "PEIS_C" in name:
-                row.type = "PEIS"
-                row.obj = PEIS(row.data, name=row.names)
-            elif "CP_C" in name:
-                row.type = "CP"
-                row.obj = CP(row.data, name=row.names)
-            elif "CA_C" in name:
-                row.type = "CA"
-                row.obj = CA(row.data, name=row.names)
-            elif "CV_C" in name:
-                row.type = "CV"
-            elif "OCV_C" in row.names:
-                row.type = "OCV"
-            else:
-                if "freq" in name2:
-                    row.type = "PEIS"
-                    row.obj = PEIS(row.data, name=row.names)
-                elif "Icontrl" in name2:
-                    row.type = "CP"
-                    row.obj = CP(row.data, name=row.names)
-                elif "Econtrl" in name2:
-                    row.type = "CA"
-                    row.obj = CA(row.data, name=row.names)
-                elif "CV_C" in name2:
-                    row.type = "CV"
-                elif "OCV_C" in row.names2:
-                    row.type = "OCV"
-            self.df.iloc[index] = row
-        self.types = list(self.df.type)
+        if self.timeunits != 's':
+            self.add_units(timeunits=self.timeunits)
 
-    def CP(self): return self.df[self.df.type == "CP"]
-    def CA(self): return self.df[self.df.type == "CA"]
-    def CV(self): return self.df[self.df.type == "CV"]
-    def PEIS(self): return self.df[self.df.type == "PEIS"]
+    
+    def make_cycles(self, threshold=50):
+        self.data['dif'] = self.data.t.diff()
+        self.data['cycle'] = np.nan
+        cycle = 1
+        for index, row in self.data.iterrows():
+            if row.dif > 50:
+                cycle=cycle+1
+            row.cycle = cycle
+            
+            self.data.iloc[index] = row
+
+    def plot_cycles(self, timeunit=timeunits , save=False, figpass = "", fname='./Fig.png', line=True, markersize=4):
+        max, tmax = [], []
+        for cycle in self.data.cycle.unique():
+            m = self.data[self.data.cycle == cycle]
+            if timeunit == 's':
+                plt.plot(m.t, m.E, marker='.', linestyle="None", label="Cycle %i" % cycle)
+            elif timeunit == 'min':
+                plt.plot(m['t(min)'], m.E, marker='.', linestyle="None", label="Cycle %i" % cycle)
+            max.append(m[m.t == m.t.max()].E.values[0])
+            tmax.append(m.t.max())
+        plt.legend()
+        plt.xlabel("Time (%s)" % self.timeunits)
+        plt.ylabel("E (%s vs %s)" % (self.Eunits, self.reference))
+        self.cycle_maxE = max
+        self.cycle_maxt = tmax
+
+
+    def add_units(self, timeunits='', Eunits=''):
+        if timeunits == 'min':
+            self.data['t(min)'] = self.data.t / 60
+        if Eunits == 'mV':
+            self.data['E(mV)'] = self.data.E*1000
+
+
+
 
 
 def Zcap(omega,Cd):
@@ -492,6 +494,7 @@ def Z_randles_s_pseudo(omega, R1, Q2, R2, Q3, R3, a2, a3):
 @dataclass
 class PEISfit:
     dc: dataclass
+    p0: tuple = field(repr=False, default="None")
     fitfunction: str = field(repr=False, default='Z_randles_s_pseudo')
     
 
@@ -499,7 +502,8 @@ class PEISfit:
         self.data = self.dc.data
         self.functions = ['Z_rc_p', 'Z_randles_p', 'Z_randles_s', 'Z_randles_s_pseudo']
         if self.fitfunction == 'Z_randles_s_pseudo':
-            self.p0 =(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
+            if self.p0 == "None":
+                self.p0 =(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
             columns=("R1", "Q2", "R2", "Q3", "R3", "a2", "a3")
             temp = [self.p0]
             self.params = pd.DataFrame(temp, columns=columns)
@@ -507,7 +511,8 @@ class PEISfit:
             
 
     def fit(self, cycle=1):
-        df1 = self.data[self.data.cycle == cycle]
+        df1 = self.data[(self.data.cycle == cycle)&(self.data.imag > 0)]
+        
         if self.fitfunction == 'Z_randles_s':
             p0=(10e-6, 1000, 16, 10e-6, 10000)
             def f(omega, Cd1, R1, R2, Cd2, R3): 
@@ -516,9 +521,12 @@ class PEISfit:
             popt, pcov = optimize.curve_fit(f, xdata, ydata, p0=p0, bounds=(0,10000),
                                method='trf') #perform fit
             eva = Z_randles_s(xdata, *popt) #evaluating function without abs
+            self.residual = ydata - eva
+            self.xaxis=xdata
             real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
             self.fitresult = pd.DataFrame({'real':real, 'imag':imag, 'comp':abs(eva), 'freq':xdata, 'phase':np.angle(eva, deg=True)}) #assigning df
             self.fitdata = df1
+
         elif self.fitfunction == 'Z_randles_s_pseudo':
             p0 = self.p0
             #p0=(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
@@ -529,31 +537,97 @@ class PEISfit:
                 imag = np.imag(solve)*-1
                 return np.hstack([real, imag])
             xdata, ydata = df1.freq, np.hstack([df1.real, df1.imag]) # assigning fitting variables
-            popt, pcov = optimize.curve_fit(f1, xdata, ydata, p0=p0, bounds=([0, -10, 0, -10, 0, 0, 0],[1000, 1000, 1000, 1000, 1000, 1, 1]),
+            popt, pcov = optimize.curve_fit(f1, xdata, ydata, p0=p0, bounds=([0, -10, 0, -10, 0, 0, 0],[1000, 1000, 1000, 1000, 1000, 1, 1]), max_nfev=10000,
                             method='trf') #perform fit
             xf = f1(xdata, *popt)
-            eva = Z_randles_s_pseudo(xdata, *popt) #evaluating function without abs
+            eva = Z_randles_s_pseudo(xdata, *popt) #evaluating function
             real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
+            #creating residuals
+            self.residual1 = df1.real - real
+            self.residual2 = df1.imag - imag
+            self.xaxis=xdata
+            self.SSE = np.sum(self.residual1**2)+np.sum(self.residual2**2) # Sum of squares error
+            self.SS = np.sum((real - np.average(real))**2)
+            dfmodel = len(p0)
+            dfdata = len(real)*2
+            self.R2_adj = 1-((self.SSE/self.SS)*(dfdata/dfmodel))
+                        
+            self.fitresult = pd.DataFrame({'real':real, 'imag':imag, 'comp':abs(eva), 'freq':xdata, 'phase':np.angle(eva, deg=True)}) #assigning df
+            self.fitdata = df1
+            param_labels = np.array(["R1", "Q2", "R2", "Q3", "R3", "a2", "a3"])
+            
+            temp = [popt]
+            temp2 = pd.DataFrame(temp, columns=param_labels, index=[cycle])
+            temp2["R^2"] = self.R2_adj
+            self.params = pd.concat([self.params, temp2])
+            self.pcov = pcov
+            self.perr = np.sqrt(np.diag(pcov))
+
+        elif self.fitfunction == 'Z_randles_s_pseudo-free':
+            p0 = self.p0
+            #p0=(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
+            def f1(omega, R1, Q2, R2, Q3, R3, a2, a3): 
+                solve = Z_randles_s_pseudo(omega, R1, Q2, R2, Q3, R3, a2, a3)
+                #real, imag = [d.real for d in solve], [d.imag * -1 for d in solve]
+                real = np.real(solve)
+                imag = np.imag(solve)*-1
+                return np.hstack([real, imag])
+            xdata, ydata = df1.freq, np.hstack([df1.real, df1.imag]) # assigning fitting variables
+            popt, pcov = optimize.curve_fit(f1, xdata, ydata, method='lm') #perform fit
+            # xf = f1(xdata, *popt)
+            eva = Z_randles_s_pseudo(xdata, *popt) #evaluating function
+            real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
+            # Residuals
+            self.residual1 = df1.real - real
+            self.residual2 = df1.imag - imag
+            self.xaxis=xdata
+            self.SSE = np.sum(self.residual1**2)+np.sum(self.residual2**2) # Sum of squares error
+            self.SS = np.sum((real - np.average(real))**2)
+            dfmodel = len(p0)
+            dfdata = len(real)*2
+            self.R2_adj = 1-((self.SSE/self.SS)*(dfdata/dfmodel))
+
             self.fitresult = pd.DataFrame({'real':real, 'imag':imag, 'comp':abs(eva), 'freq':xdata, 'phase':np.angle(eva, deg=True)}) #assigning df
             self.fitdata = df1
             param_labels = np.array(["R1", "Q2", "R2", "Q3", "R3", "a2", "a3"])
             temp = [popt]
             temp2 = pd.DataFrame(temp, columns=param_labels, index=[cycle])
             self.params = pd.concat([self.params, temp2])
+            self.pcov = pcov
+            self.perr = np.sqrt(np.diag(pcov))
 
-    def fit_cycles(self, plot=False):
+        
+    def fit_cycles(self, plot=False, residuals=False):
         cycles = self.data.cycle.unique()
         for cycle in cycles:
             self.fit(cycle=cycle)
             if plot == True:
                 self.plot()
+            if residuals==True:
+                self.plot_residuals()
+    
+    def plot_residuals(self):
+        plt.plot(self.xaxis, self.residual1, label="Real Residuals")
+        plt.plot(self.xaxis, self.residual2, label="Imaginary Residuals")
+        plt.xscale('log')
+        plt.legend()
+        plt.ylabel("Residuals (ohms)")
+        plt.xlabel('log frequency (Hz)')
+        plt.show()
     
 
 
     def plot(self, type='nyquist', save=False, fname="Fig.png"):
-        dd = self.fitresult
-        df1 = self.fitdata
-        if type == 'bode':
-            plt_bode([dd,df1], legends=['fit', 'data'], fname=fname, save=False) # plot results
-        if type == 'nyquist':
-            plt_nyquist([dd, df1], legends=['fit', 'data'], fname=fname, save=False)
+        try:
+            dd = self.fitresult
+            df1 = [self.data.real, self.data.imag]
+        except:
+            print("No Fit Performed!")
+            return
+        else:
+            dd = self.fitresult
+            df1 = self.data
+            if type == 'bode':
+                plt_bode([dd,df1], legends=['fit', 'data'], fname=fname, save=False) # plot results
+            if type == 'nyquist':
+                plt_nyquist([dd, df1], legends=['fit', 'data'], fname=fname, save=False)
