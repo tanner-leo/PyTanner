@@ -340,7 +340,8 @@ class CP:
         else:
             for cycle in self.cycles:
                 d = self.data[self.data.cycle == cycle]
-                plt.plot(d.t, d.E, marker='.', linestyle="None")
+                plt.plot(d.t, d.E)
+                # plt.plot(d.t, d.E, marker='.', linestyle="None") #alternative plotting method
                 
             plt.xlabel("Time (%s)" % self.timeunits)
             plt.ylabel("I (%s)" % self.Eunits)
