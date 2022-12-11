@@ -593,6 +593,7 @@ class PEISfit:
             param_labels = np.array(["R1", "Q2", "R2", "Q3", "R3", "a2", "a3"])
             temp = [popt]
             temp2 = pd.DataFrame(temp, columns=param_labels, index=[cycle])
+            temp2["R^2"] = self.R2_adj
             self.params = pd.concat([self.params, temp2])
             self.pcov = pcov
             self.perr = np.sqrt(np.diag(pcov))
