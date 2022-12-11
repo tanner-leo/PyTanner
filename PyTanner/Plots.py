@@ -197,7 +197,7 @@ class PEIS:
         self.complex = self.data.comp
         self.freq = self.data.freq
 
-    def nyquist(self, save=False, fname="Fig.png", title=""):
+    def nyquist(self, save=False, fname="Fig.png", title="", figpass=False):
         # def plt_nyquist(df, save=False, fname="./Figure_nyquist.png", title=""):
         plt.plot(self.real, self.imag, 'ro', markersize=3)
         plt.axis('square')
@@ -211,7 +211,8 @@ class PEIS:
         plt.tight_layout()
         if save == True:
             plt.savefig(fname, format='png', dpi=300, bbox_inches='tight')
-        plt.show()
+        if figpass == True:
+            plt.show()
 
     def bode(self, save=False, fname='./Fig.png', title=''):
         plt_bode(self.data, save=save, fname=fname, title=title)
@@ -248,7 +249,7 @@ class PEISs:
             if max(self.data.cycle) > 1:
                 print("Multiple Cycles Detected")
         
-    def nyquist(self, save=False, fname='./Fig.png'):
+    def nyquist(self, save=False, fname='./Fig.png', figpass=False):
         for index, row in self.data.iterrows():
             label = row[self.slicer] + " " + self.units
             data = row.data
@@ -259,7 +260,8 @@ class PEISs:
         plt.legend()
         if save == True:
             plt.savefig(fname, format='png', dpi=300)
-        plt.show()
+        if figpass == True:
+            plt.show()
 
     
 
