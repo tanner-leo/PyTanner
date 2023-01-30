@@ -122,9 +122,9 @@ def readtxtPEIS(path):
     'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "E","control/mA":"icontrl"})
     return r1
 
-def importtxtPEIS(paths, filter=""):
+def importtxtPEIS(paths, filter="",namelevel=3):
     results = Parallel(n_jobs=1, max_nbytes=1e6, prefer="threads")(delayed(readtxtPEIS)(path) for path in tqdm(paths) if filter in path)
-    names = [path.split('/')[3] for path in paths if filter in path]
+    names = [path.split('/')[namelevel] for path in paths if filter in path]
     df = pd.DataFrame({'data':results, 'names':names})
     for index, row in df.iterrows():
         eval = row.data.empty
