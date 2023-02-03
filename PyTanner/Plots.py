@@ -180,7 +180,7 @@ def plt_nyquist(df, legends=[""], save=False, fname="./Figure_nyquist.png", titl
     plt.tight_layout()
     if save == True:
         plt.savefig(fname, format='png', dpi=300, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 
 @dataclass
