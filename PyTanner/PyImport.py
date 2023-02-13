@@ -121,12 +121,13 @@ def process(files, diagnose=False):
     # metalist = []
     appender = []
     for file in files:
+
         if diagnose == True:
             print(file)
         data, meta = ecf.process(file)
         # datalist.append(data)
         # metalist.append(meta)
-        appender.append({'data':pd.DataFrame.from_dict(data),'meta':meta,'technique':meta['settings']['technique'],'reference_electrode':meta['settings']['reference_electrode']})
+        appender.append({'data':pd.DataFrame.from_dict(data),'meta':meta,'technique':meta['settings']['technique'],'reference_electrode':meta['settings']['reference_electrode'],'file':file.split('/')[-1]})
     df = pd.DataFrame.from_dict(appender)
     return df
 
