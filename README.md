@@ -34,6 +34,16 @@ folder - folder to read
 
 ---
 
+**process**
+
+*arguments*: 
+
+files - list of files (.mpr files)
+
+*Returns*: a dataframe containing metadata, and data
+
+---
+
 **importtxtPEIS**
 
 *arguments*: 

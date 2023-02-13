@@ -494,6 +494,8 @@ def Z_randles_s(omega, Cd1, R1, R2, Cd2, R3): # R2 and R4 are series with the Cd
 def Z_randles_s_pseudo(omega, R1, Q2, R2, Q3, R3, a2, a3):
     return Zres(R1) + Z_rq_p(omega, R2, Q2, a2) + Z_rq_p(omega, R3, Q3, a3)
 
+
+
 @dataclass
 class PEISfit:
     dc: dataclass
