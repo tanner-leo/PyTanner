@@ -116,14 +116,16 @@ def folder2files(folder, filter=[''], remover=['']):
         
     return names
 
-def process(files):
-    datalist = []
-    metalist = []
+def process(files, diagnose=False):
+    # datalist = []
+    # metalist = []
     appender = []
     for file in files:
         data, meta = ecf.process(file)
-        datalist.append(data)
-        metalist.append(meta)
+        if diagnose == True:
+            print(file)
+        # datalist.append(data)
+        # metalist.append(meta)
         appender.append({'data':pd.DataFrame.from_dict(data),'meta':meta,'technique':meta['settings']['technique'],'reference_electrode':meta['settings']['reference_electrode']})
     df = pd.DataFrame.from_dict(appender)
     return df
