@@ -96,5 +96,34 @@ makes a standard plot
 
 creates a nyquist plot of PEIS object
 
+## Other Information
+### Inset Plots
+
+Description of code to use to make an inset plot on any plot.
+~~~
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
+x1 = 500
+x2 = 1600
+
+y1 = 0.3e6
+y2 = 0.5e6
+
+axins = inset_axes(ax, 3,2, loc=1)
+axins.plot(item.data.Time, item.data[c])
+
+axins.set_xlim(x1, x2)
+axins.set_ylim(y1, y2)
+plt.xticks(visible=False)
+plt.yticks(visible=False)
+mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+plt.draw()
+
+~~~
+
+
+
 
 
