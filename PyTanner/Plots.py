@@ -372,14 +372,14 @@ class CV:
 
     def plot(self):
         plt.plot(self.data.E, self.data.I)
-        plt.xlabel("I (mA)")
+        plt.ylabel("I (mA)")
         plt.xlabel("E (V vs %s)" % self.reference)
 
     def plotcycle(self, cycle=1):
         data = self.data
         data = data[data.cycle == cycle]
         plt.plot(self.data.E, self.data.I)
-        plt.xlabel("I (mA)")
+        plt.ylabel("I (mA)")
         plt.xlabel("E (V vs %s)" % self.reference)
         
 
