@@ -363,7 +363,7 @@ class CV:
 
     def __post_init__(self):
         self.data = self.data.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
-    'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "E","control/mA":"Icontrl"})
+    'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "E","control/mA":"Icontrl", "Ewe": "E", "<I>": "I"})
         self.columns = self.data.columns
         self.cycles = self.data.cycle.unique()
 
