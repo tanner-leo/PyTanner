@@ -381,6 +381,10 @@ class CV:
         plt.plot(data.E, data.I)
         plt.ylabel("I (mA)")
         plt.xlabel("E (V vs %s)" % self.reference)
+
+    def shiftE(self, shift):
+        print('Enter an voltage you would like to add to your data')
+        self.data.E = self.data.E + shift
         
 
 @dataclass
