@@ -230,6 +230,10 @@ class PEIS:
         fitter = PEISfit(self.data)
         fitter.fit()
         fitter.plot()
+    
+    def Rs(self):
+        df = self.data
+        return df.iloc[(df['imag']-0).abs().argsort()[:1]]['real'].values[0]
 
 
     
