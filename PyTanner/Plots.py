@@ -353,6 +353,36 @@ class CP:
             plt.show(block=True)
             return
 
+
+@dataclass
+class CV:
+    data: pd.DataFrame
+    name: str = field(repr=True, default="CP")
+    description: str = field(repr=False, default="description")
+    reference: str = field(repr=True, default="Ag/AgCl")
+
+    def __post_init__(self):
+        self.data = self.data.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
+    'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "E","control/mA":"Icontrl"})
+        self.columns = self.data.columns
+        self.cycles = self.data.cycle.unique()
+
+    def column(self):
+        list(self.data.columns)
+
+    def plot(self):
+        plt.plot(self.data.E, self.data.I)
+        plt.xlabel("I (mA)")
+        plt.xlabel("E (V vs %s)" % self.reference)
+
+    def plotcycle(self, cycle=1):
+        data = self.data
+        data = data[data.cycle == cycle]
+        plt.plot(self.data.E, self.data.I)
+        plt.xlabel("I (mA)")
+        plt.xlabel("E (V vs %s)" % self.reference)
+        
+
 @dataclass
 class CA:
     data: pd.DataFrame

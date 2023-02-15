@@ -124,10 +124,10 @@ def process(files, diagnose=False):
 
         if diagnose == True:
             print(file)
-        data, meta = ecf.process(file)
+        data, meta = ecf.to_df(file)
         # datalist.append(data)
         # metalist.append(meta)
-        appender.append({'data':pd.DataFrame.from_dict(data),'meta':meta,'technique':meta['settings']['technique'],'reference_electrode':meta['settings']['reference_electrode'],'file':file.split('/')[-1]})
+        appender.append({'data':data,'meta':meta,'technique':meta['settings']['technique'],'reference_electrode':meta['settings']['reference_electrode'],'file':file.split('/')[-1]})
     df = pd.DataFrame.from_dict(appender)
     return df
 
