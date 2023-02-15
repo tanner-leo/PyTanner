@@ -391,6 +391,19 @@ class CV:
         I = self.data.I 
         I2 = savgol_filter(I,window,order)
         self.data.I = I2
+
+    def integrate(self, p1, p2, cycle=1): # Still needs attention
+        data = data[data.cycle == cycle]
+        self.plotcycle(cycle)
+        intarea = data[(data.E >p1)&(data.E<p2)&(data.I > 0)]
+        self.plotcycle(intarea)
+        # p1I = intarea[intarea.E == intarea.E.max()].I
+        # p2I = intarea[intarea.E == intarea.E.min()].I
+        # print(p1I, p2I)
+        integration = (intarea.I.mean()-(intarea[intarea.E == intarea.E.max()].I.values[0] + intarea[intarea.E == intarea.E.min()].I.values[0])/2)*(intarea.time.max()-intarea.time.min())
+        # print(integration)
+        plt.title("%.3f mC"%(integration))
+        return integration
         
 
 @dataclass
