@@ -193,6 +193,7 @@ class PEIS:
     #imag: pd.Series
     
     def __post_init__(self):
+        self.data.rename(columns={'Re(Z)':'real','-Im(Z)':'imag','|Z|':'comp','Phase(Z)':'phase'})
         self.real = self.data.real
         self.imag = self.data.imag
         self.complex = self.data.comp
