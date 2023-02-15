@@ -7,6 +7,7 @@ import cmath
 from dataclasses import dataclass, field
 import pandas as pd
 from scipy import optimize
+from scipy.signal import savgol_filter
 
 
 def plotCVseries(datalist, parameter, x_axis ="E (V vs Ag/AgCl)", y_axis="i (mA)"):
@@ -385,6 +386,11 @@ class CV:
     def shiftE(self, shift):
         print('Enter an voltage you would like to add to your data')
         self.data.E = self.data.E + shift
+    
+    def filter(self, window=20, order=3):
+        I = self.data.I 
+        I2 = savgol_filter(I,window,order)
+        self.data.I = I2
         
 
 @dataclass
