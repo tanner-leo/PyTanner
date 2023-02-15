@@ -227,9 +227,10 @@ class PEIS:
         self.description = descrp
 
     def fitting(self):
-        fitter = PEISfit(self.data)
+        fitter = PEISfit(self)
         fitter.fit()
         fitter.plot()
+        
     
     def Rs(self):
         df = self.data
@@ -572,6 +573,12 @@ class PEISfit:
             self.params = pd.DataFrame(temp, columns=columns)
             self.params.rename(index={0:'initial guess'}, inplace=True)
             
+    def set_function(self, function='Z_randles_s_pseudo'):
+        print('set function used for PEIS fitting')
+        print('=== Current Function ===')
+        print(self.fitfunction)
+        plt.plot('./Fitfunction_photos/Pseudo_Randles.png')
+        plt.show()
 
     def fit(self, cycle=1):
         df1 = self.data[(self.data.cycle == cycle)&(self.data.imag > 0)]
