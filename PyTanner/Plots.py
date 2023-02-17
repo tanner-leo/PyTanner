@@ -890,14 +890,13 @@ class PEISfitv2:
         if freq_crop == True:
             self.freq, self.Z = preprocessing.cropFrequencies(self.freq,self.Z,mfreq,Mfreq)
             
-    def parameters(self, units=False):
+    def parameters(self, units=False, name='Fit1'):
         self.params = self.circuit.parameters_
         self.paramnames = self.circuit.get_param_names()
         if units==False:
-            self.results= pd.DataFrame({'Fit1':self.params}, index=self.paramnames[0])
+            self.results= pd.DataFrame({name:self.params}, index=self.paramnames[0])
         elif units==True:
-            self.results= pd.DataFrame({'Units':self.paramnames[1],'Fit1':self.params}, index=self.paramnames[0])
-        display(self.results)
+            self.results= pd.DataFrame({'Units':self.paramnames[1],name:self.params}, index=self.paramnames[0])
         return self.results
     
     def plot_residuals(self):
