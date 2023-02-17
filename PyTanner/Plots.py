@@ -8,6 +8,15 @@ from dataclasses import dataclass, field
 import pandas as pd
 from scipy import optimize
 from scipy.signal import savgol_filter
+import matplotlib.image as mpimg
+import schemdraw
+import schemdraw.elements as elm
+from PIL import Image, ImageDraw, ImageFilter
+import impedance
+from impedance import preprocessing
+from impedance.models.circuits import CustomCircuit
+from impedance.visualization import plot_nyquist
+
 
 
 def plotCVseries(datalist, parameter, x_axis ="E (V vs Ag/AgCl)", y_axis="i (mA)"):
@@ -165,14 +174,18 @@ def plt_nyquist(df, legends=[""], save=False, fname="./Figure_nyquist.png", titl
     if legends != [""]:
         for df, label in zip(df, legends):
             plt.plot(df.real, df.imag, 'o', markersize=3, label=label)
-            plt.axis('square')
+            # plt.axis('square')
+            ax = plt.gca()
+            ax.set_aspect('equal', adjustable='datalim')
             plt.xlim(-1,max(df.real)*1.1)
             plt.ylim(-1,max(df.real)*1.1)
         plt.legend()
     else:
         for df in df:
             plt.plot(df.real, df.imag, 'o', markersize=3)
-            plt.axis('square')
+            # plt.axis('square')
+            ax = plt.gca()
+            ax.set_aspect('equal', adjustable='datalim')
             plt.xlim(-1,max(df.real)+5)
             plt.ylim(-1,max(df.real)+5)
     plt.ylabel('-Z$_{imag}$ (ohms)')
@@ -235,6 +248,16 @@ class PEIS:
     def Rs(self):
         df = self.data
         return df.iloc[(df['imag']-0).abs().argsort()[:1]]['real'].values[0]
+
+    def trim(self, min, max):
+        data = self.data
+        data = data[(data.freq < max)&(data.freq > min)]
+        self.data = data
+        self.real = self.data.real
+        self.imag = self.data.imag
+        self.complex = self.data.comp
+        self.freq = self.data.freq
+
 
 
     
@@ -530,7 +553,7 @@ def Z_rc_s(omega, Cd, R1): # series circuit of R and C
 def Z_rc_s_abs(omega, Cd, R1): # series circuit of R and C
     return abs(Zres(R1) + Zcap(omega, Cd))
 
-def Z_rq_p(omega, R2, Q2, a2):
+def Z_rq_p(omega, R2, Q2, a2): # psuedocapacitve paralell circuit
     return Zres(R2)/(Zres(R2)*Q2*(1j*2*np.pi*omega)**a2+1)
 
 def Z_rc_p(omega, Cd, R1): # paralell circuit of R and C
@@ -559,29 +582,46 @@ def Z_randles_s_pseudo(omega, R1, Q2, R2, Q3, R3, a2, a3):
 class PEISfit:
     dc: dataclass
     p0: tuple = field(repr=False, default="None")
-    fitfunction: str = field(repr=False, default='Z_randles_s_pseudo')
+    fitfunction: str = field(repr=False, default='Z_randles_s_pseudo-free')
     
 
     def __post_init__(self):
         self.data = self.dc.data
-        self.functions = ['Z_rc_p', 'Z_randles_p', 'Z_randles_s', 'Z_randles_s_pseudo']
-        if self.fitfunction == 'Z_randles_s_pseudo':
-            if self.p0 == "None":
-                self.p0 =(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
-            columns=("R1", "Q2", "R2", "Q3", "R3", "a2", "a3")
-            temp = [self.p0]
-            self.params = pd.DataFrame(temp, columns=columns)
-            self.params.rename(index={0:'initial guess'}, inplace=True)
+        self.data = self.data[self.data.imag > 0]
+        self.functions = ['Z_rc_p', 'Z_randles_p', 'Z_randles_s', 'Z_randles_s_pseudo', 'Z_randles_s_pseudo-free']
+        self.initials = [(1),(1),(10e-6, 1000, 16, 10e-6, 10000),(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5),(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)]
+        # if self.fitfunction == 'Z_randles_s_pseudo':
+        if self.p0 == "None":
+            self.p0 =(10, 100., 1e-6, 100., 1e-6, 0.5, 0.5)
+        columns=("R1", "Q2", "R2", "Q3", "R3", "a2", "a3")
+        temp = [self.p0]
+        self.params = pd.DataFrame(temp, columns=columns)
+        self.params.rename(index={0:'initial guess'}, inplace=True)
+        
             
-    def set_function(self, function='Z_randles_s_pseudo'):
-        print('set function used for PEIS fitting')
-        print('=== Current Function ===')
-        print(self.fitfunction)
-        plt.plot('./Fitfunction_photos/Pseudo_Randles.png')
-        plt.show()
+    def set_function(self, function=3, hide=False):
+        functions = pd.DataFrame({'Function':self.functions,'initial':self.initials})
+        if hide == False:
+            print('set function used for PEIS fitting')
+            print('=== Current Function ===')
+            draw_circuit(self.fitfunction)
+
+            print('Choose a fitfunction as the argument')
+            display(functions)
+        
+        self.fitfunction = functions.Function.iloc[int(function)]
+        self.p0 = functions.initial.iloc[int(function)]
+
+        if hide == False:
+            print('=== New Function ===')
+            draw_circuit(self.fitfunction)
+
+    
 
     def fit(self, cycle=1):
-        df1 = self.data[(self.data.cycle == cycle)&(self.data.imag > 0)]
+        # if 'cycle' in self.data.columns:
+        df1 = self.data[(self.data.imag > 0)]
+
         
         if self.fitfunction == 'Z_randles_s':
             p0=(10e-6, 1000, 16, 10e-6, 10000)
@@ -608,7 +648,7 @@ class PEISfit:
                 return np.hstack([real, imag])
             xdata, ydata = df1.freq, np.hstack([df1.real, df1.imag]) # assigning fitting variables
             popt, pcov = optimize.curve_fit(f1, xdata, ydata, p0=p0, bounds=([0, -10, 0, -10, 0, 0, 0],[1000, 1000, 1000, 1000, 1000, 1, 1]), max_nfev=10000,
-                            method='trf') #perform fit
+                            method='trf', ) #perform fit
             xf = f1(xdata, *popt)
             eva = Z_randles_s_pseudo(xdata, *popt) #evaluating function
             real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
@@ -643,8 +683,8 @@ class PEISfit:
                 imag = np.imag(solve)*-1
                 return np.hstack([real, imag])
             xdata, ydata = df1.freq, np.hstack([df1.real, df1.imag]) # assigning fitting variables
-            popt, pcov = optimize.curve_fit(f1, xdata, ydata, method='lm') #perform fit
-            # xf = f1(xdata, *popt)
+            popt, pcov = optimize.curve_fit(f1, xdata, ydata, method='lm',maxfev=10000) #perform fit
+            xf = f1(xdata, *popt)
             eva = Z_randles_s_pseudo(xdata, *popt) #evaluating function
             real, imag = [d.real for d in eva], [d.imag * -1 for d in eva] #evaluating
             # Residuals
@@ -702,3 +742,170 @@ class PEISfit:
                 plt_bode([dd,df1], legends=['fit', 'data'], fname=fname, save=False) # plot results
             if type == 'nyquist':
                 plt_nyquist([dd, df1], legends=['fit', 'data'], fname=fname, save=False)
+
+    
+def draw_circuit(circuit):
+
+    functions = ['Z_rc_p', 'Z_randles_p', 'Z_randles_s', 'Z_randles_s_pseudo', 'Z_randles_s_pseudo-free']
+    if circuit == functions[0]:
+        with schemdraw.Drawing() as d:
+            d.config(unit=2)
+            d.add(elm.Resistor().label('$R_1$'))
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_2$').right())
+            d.add(elm.Line().length(1).down())
+            d.push()
+            d.add(elm.Line().length(0.5).right())
+            d.pop()
+            d.add(elm.Line().length(1).down())
+            d.add(elm.Capacitor().label('$C_2$').left())
+            d.add(elm.Line().up())
+            d.push()
+    elif circuit == functions[1]:
+        with schemdraw.Drawing() as d:
+            def Rand1(l1, l2, l3):
+                d.config(unit=2)
+                d.add(elm.Resistor().label(l1).right())
+                d.add(elm.Line().length(.75).up())
+                d.add(elm.Resistor().label(l2).right())
+                d.add(elm.Line().length(.75).down())
+                d.push()
+                d.add(elm.Line().length(0.5).right())
+                d.pop()
+                d.add(elm.Line().length(0.75).down())
+                d.add(elm.Capacitor().label(l3).left())
+                d.add(elm.Line().length(0.75).up())
+            Rand1('$R_1$', '$R_2$', '$C_2$')
+            d.here = (0,0)
+            
+            d.add(elm.Line().length(2).down())
+            d.add(elm.Line().length(1.5).right())
+            Rand1('$R_3$', '$R_4$', '$C_4$')
+            d.here = (4.5,0)
+            d.add(elm.Line().length(1.5).right())
+            d.add(elm.Line().length(2).down())
+            d.move(dy=1)
+            d.add(elm.Line().length(0.5).right())
+            d.move(dx=-6.5)
+            d.add(elm.Line().length(0.5).left())
+            d.push()
+    elif circuit == functions[2]:
+        with schemdraw.Drawing() as d:
+            d.config(unit=2)
+            d.add(elm.Resistor().label('$R_1$'))
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_2$').right())
+            d.add(elm.Line().length(1).down())
+            d.push()
+            d.add(elm.Line().length(0.5).right())
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_3$').right())
+            d.add(elm.Line().length(1).down())
+            d.add(elm.Line().length(0.5).right())
+            d.add(elm.Line().length(0.5).left())
+            d.add(elm.Line().length(1).down())
+            d.add(elm.Capacitor().label('$C_3$').left())
+            d.add(elm.Line().length(1).up())
+            d.pop()
+            d.add(elm.Line().length(1).down())
+            d.add(elm.Capacitor().label('$C_2$').left())
+            d.add(elm.Line().up())
+            d.push()
+    elif circuit == functions[3]:
+        with schemdraw.Drawing() as d:
+            d.config(unit=2)
+            d.add(elm.Resistor().label('$R_1$'))
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_2$').right())
+            d.add(elm.Line().length(1).down())
+            d.push()
+            d.add(elm.Line().length(0.5).right())
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_3$').right())
+            d.add(elm.Line().length(1).down())
+            d.add(elm.Line().length(0.5).right())
+            d.add(elm.Line().length(0.5).left())
+            d.add(elm.Line().length(1).down())
+            d.add(elm.CPE().label('$Q_3$').left())
+            d.add(elm.Line().length(1).up())
+            d.pop()
+            d.add(elm.Line().length(1).down())
+            d.add(elm.CPE().label('$Q_2$').left())
+            d.add(elm.Line().up())
+            d.push()
+    elif circuit == functions[4]:
+        with schemdraw.Drawing() as d:
+            d.config(unit=2)
+            d.add(elm.Resistor().label('$R_1$'))
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_2$').right())
+            d.add(elm.Line().length(1).down())
+            d.push()
+            d.add(elm.Line().length(0.5).right())
+            d.add(elm.Line().length(1).up())
+            d.add(elm.Resistor().label('$R_3$').right())
+            d.add(elm.Line().length(1).down())
+            d.add(elm.Line().length(0.5).right())
+            d.add(elm.Line().length(0.5).left())
+            d.add(elm.Line().length(1).down())
+            d.add(elm.CPE().label('$Q_3$').left())
+            d.add(elm.Line().length(1).up())
+            d.pop()
+            d.add(elm.Line().length(1).down())
+            d.add(elm.CPE().label('$Q_2$').left())
+            d.add(elm.Line().up())
+            d.push()
+
+
+
+
+@dataclass
+class PEISfitv2:
+    dc: dataclass
+    p0: tuple = field(repr=False, default="None")
+    fitfunction: str = field(repr=False, default='Z_randles_s_pseudo-free')
+    
+
+    def __post_init__(self):
+        self.Z = self.dc.data.real + self.dc.data.imag*-1j
+        self.freq = self.dc.data.freq
+
+    def change_circuit(self, circuitstr, initial_guess):
+        self.circuit = CustomCircuit(circuitstr, initial_guess=initial_guess)
+
+    def fit(self):
+        self.circuit.fit(self.freq, self.Z)
+        self.Z_fit = self.circuit.predict(self.freq)
+
+    def plot(self):
+        fig, ax = plt.subplots()
+        plot_nyquist(self.Z_fit, labelsize=12, ax = ax)
+        plot_nyquist(self.Z, labelsize=12, ax=ax)
+        plt.legend(['Fit','Data'])
+        plt.show()
+
+    def trimdata(self, belowx=True, freq_crop=False, mfreq=1, Mfreq=10e8):
+        if belowx == True:
+            self.freq, self.Z = preprocessing.ignoreBelowX(self.freq, self.Z)
+        if freq_crop == True:
+            self.freq, self.Z = preprocessing.cropFrequencies(self.freq,self.Z,mfreq,Mfreq)
+            
+    def parameters(self, units=False):
+        self.params = self.circuit.parameters_
+        self.paramnames = self.circuit.get_param_names()
+        if units==False:
+            self.results= pd.DataFrame({'Fit1':self.params}, index=self.paramnames[0])
+        elif units==True:
+            self.results= pd.DataFrame({'Units':self.paramnames[1],'Fit1':self.params}, index=self.paramnames[0])
+        display(self.results)
+        return self.results
+    
+    def plot_residuals(self):
+        plt.plot(self.xaxis, self.residual1, label="Real Residuals")
+        plt.plot(self.xaxis, self.residual2, label="Imaginary Residuals")
+        plt.xscale('log')
+        plt.legend()
+        plt.ylabel("Residuals (ohms)")
+        plt.xlabel('log frequency (Hz)')
+        plt.show()
+    
