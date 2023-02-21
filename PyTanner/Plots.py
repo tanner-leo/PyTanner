@@ -448,7 +448,8 @@ class CA:
         self.data = self.data.rename(columns={"freq/Hz":"freq", "Re(Z)/Ohm": "real", "-Im(Z)/Ohm": "imag", "|Z|/Ohm": "comp", "Phase(Z)/deg": "phase","time/s":"t", 
     'cyle number':'cycle', "time/s":"t", "Ewe/V": "E", "<I>/mA": "I", "cycle number": "cycle", "<Ewe>/V": "Ewe","control/mA":"Icontrl", "control/V":"Econtrl"})
         self.columns = self.data.columns
-        self.cycles = self.data.cycle.unique()
+        if 'cycle' in self.data.columns:
+            self.cycles = self.data.cycle.unique()
         
 
     def change_units(self, timeunits='s', Iunits='mA'):
