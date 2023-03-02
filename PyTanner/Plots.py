@@ -875,15 +875,16 @@ class PEISfitv2:
         self.circuit = CustomCircuit(circuitstr, initial_guess=initial_guess)
 
     def fit(self):
-        self.circuit.fit(self.freq, self.Z)
+        self.circuit.fit(self.freq, self.Z, weight_by_modulus=True)
         self.Z_fit = self.circuit.predict(self.freq)
+        self.res_real = np.real(self.Z-self.Z_fit)/np.abs(self.Z)
+        self.res_imag = np.imag(self.Z-self.Z_fit)/np.abs(self.Z)
 
     def plot(self):
         fig, ax = plt.subplots()
         plot_nyquist(self.Z_fit, labelsize=12, ax = ax)
         plot_nyquist(self.Z, labelsize=12, ax=ax)
         plt.legend(['Fit','Data'])
-        plt.show()
 
     def trimdata(self, belowx=True, freq_crop=False, mfreq=1, Mfreq=10e8):
         if belowx == True:
@@ -900,12 +901,12 @@ class PEISfitv2:
             self.results= pd.DataFrame({'Units':self.paramnames[1],name:self.params}, index=self.paramnames[0])
         return self.results
     
-    def plot_residuals(self):
-        plt.plot(self.xaxis, self.residual1, label="Real Residuals")
-        plt.plot(self.xaxis, self.residual2, label="Imaginary Residuals")
-        plt.xscale('log')
-        plt.legend()
-        plt.ylabel("Residuals (ohms)")
-        plt.xlabel('log frequency (Hz)')
-        plt.show()
+    def plot_res(self):
+        fig, ax = plt.subplots()
+        plot_residuals(ax=ax,f=self.freq, res_real=self.res_real, res_imag=self.res_imag)
+        # plt.plot(self.xaxis, self.residual2, label="Imaginary Residuals")
+        # plt.xscale('log')
+        # plt.legend()
+        # plt.ylabel("Residuals (ohms)")
+        # plt.xlabel('log frequency (Hz)')
     
